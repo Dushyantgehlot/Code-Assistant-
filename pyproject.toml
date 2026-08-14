@@ -1,0 +1,10 @@
+[project]
+name = "coding-agent"
+version = "0.1.0"
+description = "Coding agent built with the OpenAI Agents SDK"
+requires-python = ">=3.12"
+dependencies = [
+    "openai-agents>=0.0.15",
+    "openai>=1.68.2",
+    "python-dotenv>=1.0.1",
+]

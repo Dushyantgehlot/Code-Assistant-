@@ -2,8 +2,6 @@
 
 A sandboxed coding agent built with the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/). Give it a task in plain English and it reads, writes, edits, and runs code to get it done — all inside an isolated Docker container so nothing it does can touch your real system.
 
-> **Evaluated result: 10/13 (77%) on a clean task battery** — 100% on routine dev tasks, but not yet reliable on trust-critical behavior (self-verification integrity, handling unclear input). See [`agent_evaluation_report.md`](agent_evaluation_report.md) for the full writeup, including what's still broken. Use this agent with review, not unattended.
-
 ## How it works
 
 A single agent (`agent.py`) is given five tools (`tools.py`) and runs in a loop (`main.py`): you type a task, the agent decides which tools to call, calls them, sees the results, and keeps going until it has a final answer — all automatically via the Agents SDK's built-in agentic loop (capped at 30 turns per task).
@@ -49,8 +47,6 @@ You'll get a `Task:` prompt. Type what you want done; type `exit` to quit. Conve
 
 ## Known limitations
 
-See [`agent_evaluation_report.md`](agent_evaluation_report.md) for the full evaluation, but in short:
-
 - It will sometimes guess at an unclear/incomplete instruction and act confidently on the guess instead of asking for clarification.
 - Its self-written tests can occasionally encode a bug's actual (wrong) behavior as the expected/correct value, rather than the intended behavior — meaning "tests pass" doesn't always mean "the code is right."
 - Always review what it did rather than trusting its summary at face value, especially for anything beyond a routine, well-specified task.
@@ -63,6 +59,5 @@ coding_agent/
   tools.py                     # the 5 sandboxed tools
   main.py                      # terminal entry point / conversation loop
   Dockerfile                   # builds the sandboxed image
-  agent_evaluation_report.md   # evaluation results and known failure modes
   workspace/                   # mounted sandbox - the only filesystem the agent can touch
 ```

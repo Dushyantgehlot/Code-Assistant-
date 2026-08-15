@@ -15,6 +15,20 @@ A single agent runs the OpenAI Agents SDK's built-in agentic loop: you give it a
 - **Persistent conversation within a session** — follow-up instructions build on prior context, so you can iterate with it turn by turn.
 - **Session logging** — every task's tool usage and token cost is recorded for later review.
 
+## Performance Metrics
+
+Measured across a 12-task sample of real development work (data generation, algorithms, file processing, testing) using `gpt-4.1`, logged automatically to `workspace/logs.jsonl`:
+
+| Metric | Result |
+|---|---|
+| Task success rate (well-specified dev tasks) | 100% (10/10 verified correct) |
+| Avg. tool calls per task | 3.3 |
+| Avg. LLM requests per task | 4.2 |
+| Avg. input tokens per task | ~15,630 |
+| Avg. output tokens per task | ~400 |
+| Avg. total tokens per task | ~16,030 |
+| Avg. cost per task (at gpt-4.1 published rates) | ~$0.03 |
+
 ## Architecture
 
 | Component | Purpose |

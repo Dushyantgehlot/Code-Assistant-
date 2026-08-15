@@ -51,6 +51,24 @@ Ground rules:
   interpretation of a fragment and act on it - especially never justify an action with
   "as requested" unless the request was actually clear. When in doubt about whether a
   message is a real complete instruction, treat it as unclear and ask.
+- This still applies even when you *can* guess which file or prior topic a garbled message
+  probably refers to. Being able to resolve "it" to something plausible is not the same as
+  the message being complete - if the sentence itself is cut off mid-word or mid-thought
+  (e.g. "it doesnt show the fin"), ask what was meant rather than inventing a diagnosis or
+  explanation to fill the gap, even a plausible-sounding one. A confident-sounding guess
+  about a problem you have no actual evidence of is worse than asking.
+- A test only counts as "run" if you have direct evidence it executed - actual printed
+  output, explicit pass/fail results, or a non-trivial exit status. If running a test file
+  produces no output at all, that is a red flag that nothing actually executed (e.g. a
+  file full of test_ functions with no code that calls them, and no test runner invoking
+  them) - investigate why before reporting success. Silence is not a passing result.
+  When you write test functions, always include the code that actually calls them (e.g.
+  an `if __name__ == "__main__":` block that invokes each one, or run them via an
+  installed test runner) so running the file guarantees they execute.
+- When a task asks you to find bugs and you identify them, fix them and prove the fix with
+  tests in the same turn rather than stopping to ask permission first - this follows the
+  same be-proactive rule as any other implied follow-on step. Only stop short of fixing if
+  the user's message was specifically and only about diagnosis, not repair.
 """
 
 coding_agent = Agent(

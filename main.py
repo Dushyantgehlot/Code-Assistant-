@@ -21,11 +21,24 @@ MAX_HISTORY_ITEMS = 60
 RETRY_AFTER_RE = re.compile(r"try again in ([\d.]+)s")
 
 
+def trim_history(items: list, max_items: int) -> list:
+    """Drop the oldest whole turns until at or under max_items, without ever
+    splitting a turn - so a function_call is never separated from its
+    matching function_call_output, which the API rejects as invalid."""
+    if len(items) <= max_items:
+        return items
+    turn_starts = [i for i, item in enumerate(items) if item.get("role") == "user"]
+    for start in turn_starts:
+        if len(items) - start <= max_items:
+            return items[start:]
+    return items
+
+
 async def run_with_retry(history, max_retries: int = 4):
     for attempt in range(max_retries):
         try:
             with trace("Coding Agent run"):
-                return await Runner.run(coding_agent, history)
+                return await Runner.run(coding_agent, history, max_turns=30)
         except RateLimitError as e:
             if attempt == max_retries - 1:
                 raise
@@ -63,6 +76,7 @@ def log_task(task: str, result) -> None:
 async def main():
     print("Coding Agent ready. Type a task, or 'exit' to quit.")
     history = []
+    consecutive_failures = 0
     while True:
         task = input("\nTask: ").strip()
         normalized = task.lower()
@@ -76,10 +90,19 @@ async def main():
         try:
             result = await run_with_retry(history)
         except Exception as e:
-            print(f"\nTask failed: {e}\nHistory kept - try again or rephrase the task.")
+            consecutive_failures += 1
             history.pop()
+            if consecutive_failures >= 2:
+                # Two failures in a row on the same history likely means the
+                # history itself is the problem - drop it and start fresh
+                # rather than getting stuck failing forever.
+                history = []
+                print(f"\nTask failed twice: {e}\nConversation history was reset - try again.")
+            else:
+                print(f"\nTask failed: {e}\nHistory kept - try again or rephrase the task.")
             continue
-        history = result.to_input_list()[-MAX_HISTORY_ITEMS:]
+        consecutive_failures = 0
+        history = trim_history(result.to_input_list(), MAX_HISTORY_ITEMS)
         log_task(task, result)
         print(f"\n{result.final_output}")
 

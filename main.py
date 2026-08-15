@@ -1,8 +1,10 @@
 import asyncio
 import json
+import re
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
+from openai import RateLimitError
 from agents import Runner, trace
 
 from agent import coding_agent
@@ -11,6 +13,26 @@ from tools import WORKSPACE
 load_dotenv(override=True)
 
 LOG_PATH = WORKSPACE / "logs.jsonl"
+
+# Cap how many prior input items get resent each turn, so token usage per
+# request stays bounded instead of growing without limit over a long session.
+MAX_HISTORY_ITEMS = 60
+
+RETRY_AFTER_RE = re.compile(r"try again in ([\d.]+)s")
+
+
+async def run_with_retry(history, max_retries: int = 4):
+    for attempt in range(max_retries):
+        try:
+            with trace("Coding Agent run"):
+                return await Runner.run(coding_agent, history)
+        except RateLimitError as e:
+            if attempt == max_retries - 1:
+                raise
+            match = RETRY_AFTER_RE.search(str(e))
+            wait = float(match.group(1)) + 1 if match else 15.0
+            print(f"\nRate limit hit, waiting {wait:.0f}s and retrying...")
+            await asyncio.sleep(wait)
 
 
 def log_task(task: str, result) -> None:
@@ -51,9 +73,13 @@ async def main():
         if not task:
             continue
         history.append({"role": "user", "content": task})
-        with trace("Coding Agent run"):
-            result = await Runner.run(coding_agent, history)
-        history = result.to_input_list()
+        try:
+            result = await run_with_retry(history)
+        except Exception as e:
+            print(f"\nTask failed: {e}\nHistory kept - try again or rephrase the task.")
+            history.pop()
+            continue
+        history = result.to_input_list()[-MAX_HISTORY_ITEMS:]
         log_task(task, result)
         print(f"\n{result.final_output}")
 
